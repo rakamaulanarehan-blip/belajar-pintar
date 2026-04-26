@@ -1,0 +1,326 @@
+```react
+import React, { useState, useEffect } from 'react';
+import { 
+  Timer, 
+  CheckCircle2, 
+  BookOpen, 
+  Plus, 
+  Trash2, 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  BrainCircuit,
+  LayoutDashboard,
+  ChevronRight,
+  ChevronLeft
+} from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // State untuk Pomodoro
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [isActive, setIsActive] = useState(false);
+  const [mode, setMode] = useState('belajar'); // 'belajar' atau 'istirahat'
+
+  // State untuk To-Do List
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState("");
+
+  // State untuk Flashcards
+  const [cards, setCards] = useState([
+    { id: 1, front: "Apa itu Fotosintesis?", back: "Proses tumbuhan mengubah cahaya matahari menjadi energi kimia." },
+    { id: 2, front: "Siapa penemu lampu pijar?", back: "Thomas Alva Edison." },
+  ]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  // Logika Timer
+  useEffect(() => {
+    let interval = null;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      clearInterval(interval);
+      handleTimerEnd();
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft]);
+
+  const handleTimerEnd = () => {
+    setIsActive(false);
+    if (mode === 'belajar') {
+      alert("Waktu belajar selesai! Waktunya istirahat sejenak.");
+      setMode('istirahat');
+      setTimeLeft(5 * 60);
+    } else {
+      alert("Waktu istirahat selesai! Mari lanjut belajar.");
+      setMode('belajar');
+      setTimeLeft(25 * 60);
+    }
+  };
+
+  const toggleTimer = () => setIsActive(!isActive);
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(mode === 'belajar' ? 25 * 60 : 5 * 60);
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Logika Tugas
+  const addTask = (e) => {
+    e.preventDefault();
+    if (!newTask.trim()) return;
+    setTasks([...tasks, { id: Date.now(), text: newTask, completed: false }]);
+    setNewTask("");
+  };
+
+  const toggleTask = (id) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const deleteTask = (id) => {
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-20 md:pb-0">
+      {/* Sidebar untuk Desktop */}
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 md:w-64 md:h-screen md:border-t-0 md:border-r z-50">
+        <div className="p-6 hidden md:block">
+          <h1 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
+            <BrainCircuit /> StudyBuddy
+          </h1>
+        </div>
+        
+        <div className="flex md:flex-col justify-around md:justify-start p-2 md:p-4 gap-2">
+          <NavButton 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+            icon={<LayoutDashboard size={20} />} 
+            label="Dashboard" 
+          />
+          <NavButton 
+            active={activeTab === 'timer'} 
+            onClick={() => setActiveTab('timer')} 
+            icon={<Timer size={20} />} 
+            label="Timer" 
+          />
+          <NavButton 
+            active={activeTab === 'tugas'} 
+            onClick={() => setActiveTab('tugas')} 
+            icon={<CheckCircle2 size={20} />} 
+            label="Tugas" 
+          />
+          <NavButton 
+            active={activeTab === 'flashcard'} 
+            onClick={() => setActiveTab('flashcard')} 
+            icon={<BookOpen size={20} />} 
+            label="Kartu" 
+          />
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="md:ml-64 p-4 md:p-8 max-w-4xl mx-auto transition-all">
+        {activeTab === 'dashboard' && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <header>
+              <h2 className="text-3xl font-bold">Halo, Mari Belajar! 👋</h2>
+              <p className="text-slate-500 mt-2">Fokus pada apa yang penting hari ini.</p>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-indigo-600 text-white p-6 rounded-2xl shadow-lg shadow-indigo-100">
+                <p className="opacity-80">Sesi Saat Ini</p>
+                <h3 className="text-4xl font-mono font-bold mt-2">{formatTime(timeLeft)}</h3>
+                <p className="mt-4 text-sm bg-white/20 inline-block px-3 py-1 rounded-full capitalize">Mode: {mode}</p>
+              </div>
+              
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 className="font-bold mb-3">Tugas Mendatang</h4>
+                <div className="space-y-2">
+                  {tasks.filter(t => !t.completed).slice(0, 2).map(t => (
+                    <div key={t.id} className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> {t.text}
+                    </div>
+                  ))}
+                  {tasks.filter(t => !t.completed).length === 0 && <p className="text-xs text-slate-400">Tidak ada tugas tertunda.</p>}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'timer' && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-8 animate-in zoom-in-95 duration-300">
+            <div className="text-center">
+              <span className="text-sm font-bold uppercase tracking-widest text-indigo-500">{mode}</span>
+              <h2 className="text-8xl font-mono font-bold mt-4 text-slate-800">{formatTime(timeLeft)}</h2>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={toggleTimer}
+                className={`p-6 rounded-full transition-all ${isActive ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-200'}`}
+              >
+                {isActive ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
+              </button>
+              <button 
+                onClick={resetTimer}
+                className="p-6 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-all"
+              >
+                <RotateCcw size={32} />
+              </button>
+            </div>
+            
+            <div className="flex gap-2 bg-white p-1 rounded-xl border border-slate-200">
+               <button 
+                onClick={() => { setMode('belajar'); setTimeLeft(25 * 60); setIsActive(false); }}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'belajar' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50'}`}
+               >
+                 Fokus (25m)
+               </button>
+               <button 
+                onClick={() => { setMode('istirahat'); setTimeLeft(5 * 60); setIsActive(false); }}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'istirahat' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50'}`}
+               >
+                 Istirahat (5m)
+               </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tugas' && (
+          <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+            <h2 className="text-2xl font-bold">Daftar Tugas</h2>
+            <form onSubmit={addTask} className="flex gap-2">
+              <input 
+                type="text" 
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Tambah tugas baru..." 
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+              <button type="submit" className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all">
+                <Plus />
+              </button>
+            </form>
+
+            <div className="space-y-3">
+              {tasks.map(task => (
+                <div key={task.id} className="group flex items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition-all">
+                  <button 
+                    onClick={() => toggleTask(task.id)}
+                    className={`p-1 rounded-md border-2 transition-all ${task.completed ? 'bg-green-500 border-green-500 text-white' : 'border-slate-300 text-transparent'}`}
+                  >
+                    <CheckCircle2 size={16} />
+                  </button>
+                  <span className={`flex-1 ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                    {task.text}
+                  </span>
+                  <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+              {tasks.length === 0 && (
+                <div className="text-center py-12 text-slate-400">
+                  <CheckCircle2 size={48} className="mx-auto mb-4 opacity-20" />
+                  <p>Semua tugas selesai!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'flashcard' && (
+          <div className="space-y-8 flex flex-col items-center animate-in slide-in-from-bottom-4 duration-300">
+             <h2 className="text-2xl font-bold self-start w-full">Flashcards</h2>
+             
+             {cards.length > 0 ? (
+               <>
+                <div 
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className="relative w-full max-w-sm h-64 perspective-1000 cursor-pointer"
+                >
+                  <div className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+                    {/* Front */}
+                    <div className="absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl shadow-xl flex items-center justify-center p-8 backface-hidden text-center">
+                      <p className="text-xl font-medium text-slate-700">{cards[currentCardIndex].front}</p>
+                      <span className="absolute bottom-4 text-xs text-slate-400 font-bold tracking-widest">KLIK UNTUK LIHAT JAWABAN</span>
+                    </div>
+                    {/* Back */}
+                    <div className="absolute inset-0 bg-indigo-600 text-white rounded-3xl shadow-xl flex items-center justify-center p-8 backface-hidden transform rotate-y-180 text-center">
+                      <p className="text-xl font-medium">{cards[currentCardIndex].back}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <button 
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCurrentCardIndex((prev) => (prev - 1 + cards.length) % cards.length);
+                    }}
+                    className="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+                  >
+                    <ChevronLeft />
+                  </button>
+                  <span className="text-sm font-bold text-slate-500">
+                    {currentCardIndex + 1} / {cards.length}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCurrentCardIndex((prev) => (prev + 1) % cards.length);
+                    }}
+                    className="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+                  >
+                    <ChevronRight />
+                  </button>
+                </div>
+               </>
+             ) : (
+               <p className="text-slate-400">Belum ada kartu untuk dipelajari.</p>
+             )}
+          </div>
+        )}
+      </main>
+
+      <style>{`
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+      `}</style>
+    </div>
+  );
+};
+
+const NavButton = ({ active, onClick, icon, label }) => (
+  <button 
+    onClick={onClick}
+    className={`flex flex-col md:flex-row items-center gap-1 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition-all ${
+      active 
+        ? 'text-indigo-600 bg-indigo-50 font-bold' 
+        : 'text-slate-500 hover:bg-slate-50'
+    }`}
+  >
+    {icon}
+    <span className="text-[10px] md:text-sm font-medium">{label}</span>
+  </button>
+);
+
+export default App;
+
+```
